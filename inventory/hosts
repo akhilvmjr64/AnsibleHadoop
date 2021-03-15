@@ -1,0 +1,9 @@
+#Enter the IP addresses and the passwords of the name node below
+[hadoop_name_node]
+#you can use the format below to add a record
+#192.168.0.4 ansible_ssh_pass=password
+
+#Enter the IP addresses and the passwords of the data nodes below
+[hadoop_data_node]
+#you can use the format below to add a record
+#192.168.0.5 ansible_ssh_pass=password

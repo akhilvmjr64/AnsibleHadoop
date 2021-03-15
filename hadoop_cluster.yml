@@ -1,0 +1,80 @@
+#installing the required packages
+- hosts : all
+  tasks :
+          - name : "Installing hadoop downloading the required packages"
+            shell :
+                    cmd : "curl -o /tmp/hadoop.rpm https://archive.apache.org/dist/hadoop/core/hadoop-1.2.1/hadoop-1.2.1-1.i386.rpm; curl -o /tmp/java-jdk.rpm http://anfadmin.ucsd.edu/linux/RHEL/7/x86_64/jdk-8u171-linux-x64.rpm"
+            ignore_errors: yes
+          - name : "Installing java jdk dependency for hadoop"
+            shell :
+                  cmd : "rpm -ivh /tmp/java-jdk.rpm"
+            ignore_errors: yes
+          - name : "Installing hadoop"
+            shell :
+                  cmd : "rpm -ivh /hadoop_packages/packages/ha* --force; true"
+            ignore_errors: yes
+          - name : "Stopping the name node or data node if it already exists"
+            shell :
+                    cmd : "hadoop-daemon.sh stop namenode; hadoop-daemon.sh stop datanode"
+
+- hosts : hadoop_name_node
+  tasks :
+          - debug :
+                  msg : "Configuring the name node"
+          - name : "Creating the name node directory"
+            shell :
+                    cmd : "rm -rf /name_dir"
+          - file :
+                  path : "/name_dir"
+                  state : "directory"
+          - name : "Configuring the namenode changing hdfs-site.xml"
+            template :
+                    src : "./hadoop_hdfs_name.xml"
+                    dest : "/etc/hadoop/hdfs-site.xml"
+          - name : "Configuring the namenode changing core-site.xml"
+            template :
+                    src : "./hadoop_core_name.xml"
+                    dest : "/etc/hadoop/core-site.xml"
+          - name : "Formatting namenode"
+            shell :
+                    cmd : "echo 'Y' | hadoop namenode -format"
+          - name : "Starting namenode"
+            shell :
+                    cmd : "hadoop-daemon.sh start namenode"
+          - name : "Stopping firewall"
+            shell :
+                    cmd : "systemctl stop firewalld"
+          - name : "Setting SELinux to permissive"
+            shell :
+                    cmd : "setenforce 0"
+
+- hosts : hadoop_data_node
+  vars :
+          name_ip : "{{ groups['hadoop_name_node'][0] }}"
+  tasks :
+          - debug :
+                  msg : "Configuring the data node"
+          - name : "Creating data node directory in each data node"
+            shell :
+                    cmd : "rm -rf /data_dir"
+          - file :
+                  path : "/data_dir"
+                  state : "directory"
+          - name : "Configuring the datanode changing hdfs-site.xml"
+            template :
+                    src : "./hadoop_hdfs_data.xml"
+                    dest : "/etc/hadoop/hdfs-site.xml"
+          - name : "Configuring the datanode changing core-site.xml"
+            template :
+                    src : "./hadoop_core_data.xml"
+                    dest : "/etc/hadoop/core-site.xml"
+          - name : "Starting datanode"
+            shell :
+                    cmd : "hadoop-daemon.sh start datanode"
+          - name : "Stopping firewall"
+            shell :
+                    cmd : "systemctl stop firewalld"
+          - name : "Setting SELinux to permissive"
+            shell :
+                    cmd : "setenforce 0"
+
